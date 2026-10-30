@@ -3999,4 +3999,77 @@ while (hi - lo > 1){
 }
 //lo + 1 is the answer
 
+// nCr template
+
+#include <bits/stdc++.h>
+using namespace std;
+
+const int MOD = 1e9 + 7; // Change to 998244353 if needed
+
+struct Combinatorics {
+    vector<long long> fact, invFact;
+
+    // Fast modular exponentiation: (base^exp) % MOD
+    long long power(long long base, long long exp) {
+        long long res = 1;
+        base %= MOD;
+        while (exp > 0) {
+            if (exp % 2 == 1) res = (res * base) % MOD;
+            base = (base * base) % MOD;
+            exp /= 2;
+        }
+        return res;
+    }
+
+    // Precompute factorials and inverse factorials up to n
+    Combinatorics(int n) {
+        fact.resize(n + 1);
+        invFact.resize(n + 1);
+        
+        fact[0] = 1;
+        for (int i = 1; i <= n; i++) {
+            fact[i] = (fact[i - 1] * i) % MOD;
+        }
+        
+        // Fermat's Little Theorem for modular inverse of the largest factorial
+        invFact[n] = power(fact[n], MOD - 2);
+        
+        // Calculate remaining inverse factorials backwards in O(N) instead of O(N log MOD)
+        for (int i = n - 1; i >= 0; i--) {
+            invFact[i] = (invFact[i + 1] * (i + 1)) % MOD;
+        }
+    }
+
+    // Returns nCr % MOD
+    long long nCr(int n, int r) {
+        if (r < 0 || r > n) return 0;
+        return fact[n] * invFact[r] % MOD * invFact[n - r] % MOD;
+    }
+    
+    // Returns nPr % MOD (Optional)
+    long long nPr(int n, int r) {
+        if (r < 0 || r > n) return 0;
+        return fact[n] * invFact[n - r] % MOD;
+    }
+};
+
+int main() {
+    // 1. Initialize with the maximum constraint of N (e.g., 200,000)
+    int MAXN = 200000;
+    Combinatorics ncr(MAXN); 
+    
+    // 2. Answer queries in O(1) time
+    int t;
+    cin >> t;
+    while (t--) {
+        int n, r;
+        cin >> n >> r;
+        cout << ncr.nCr(n, r) << "\n";
+    }
+    
+    return 0;
+}
+
+// end
+
 // end
