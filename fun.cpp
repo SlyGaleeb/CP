@@ -898,6 +898,136 @@ struct segtree {
 
 // Code end
 
+// Persistent Segment Tree
+
+struct segtree {
+    ll NEUTRAL_ELEMENT = 0;
+    ll size;
+    vector<ll> sums, lc, rc, roots;
+
+    ll single(ll val) {
+        return val;
+    }
+
+    ll merge(ll a, ll b) {
+        return a + b;
+    }
+
+    // Allocates a fresh node and returns its index
+    ll new_node() {
+        sums.push_back(NEUTRAL_ELEMENT);
+        lc.push_back(-1);
+        rc.push_back(-1);
+        return (ll)sums.size() - 1;
+    }
+
+    // Duplicates an existing node x so we only modify the copy
+    ll copy_node(ll x) {
+        sums.push_back(sums[x]);
+        lc.push_back(lc[x]);
+        rc.push_back(rc[x]);
+        return (ll)sums.size() - 1;
+    }
+
+    void init(ll n, ll expected_updates = 200000) {
+        size = 1;
+        while (size < n)
+            size *= 2;
+        sums.clear();
+        lc.clear();
+        rc.clear();
+        roots.clear();
+
+        // Pre-allocate memory: 2*size for initial build + ~22 nodes per update
+        ll max_nodes = 2 * size + expected_updates * 22;
+        sums.reserve(max_nodes);
+        lc.reserve(max_nodes);
+        rc.reserve(max_nodes);
+    }
+
+    ll build(vector<ll>& v, ll lx, ll rx) {
+        ll x = new_node();
+        if (rx - lx == 1) {
+            if (lx < (ll)v.size())
+                sums[x] = single(v[lx]);
+            return x;
+        }
+        ll mid = (lx + rx) / 2;
+        ll left_child = build(v, lx, mid);
+        ll right_child = build(v, mid, rx);
+        lc[x] = left_child;
+        rc[x] = right_child;
+        sums[x] = merge(sums[lc[x]], sums[rc[x]]);
+        return x;
+    }
+
+    // Builds Version 0 from vector v and returns version ID (0)
+    ll build(vector<ll>& v) {
+        ll root = build(v, 0, size);
+        roots.push_back(root);
+        return (ll)roots.size() - 1;
+    }
+
+    // Overload to build an all-zero Version 0 if no initial vector is provided
+    ll build() {
+        vector<ll> empty_v;
+        return build(empty_v);
+    }
+
+    ll set(ll i, ll val, ll x, ll lx, ll rx) {
+        ll nx = copy_node(x);
+        if (rx - lx == 1) {
+            sums[nx] = single(val);
+            return nx;
+        }
+        ll mid = (lx + rx) / 2;
+        if (i < mid) {
+            ll left_child = set(i, val, lc[x], lx, mid);
+            lc[nx] = left_child;
+        } else {
+            ll right_child = set(i, val, rc[x], mid, rx);
+            rc[nx] = right_child;
+        }
+        sums[nx] = merge(sums[lc[nx]], sums[rc[nx]]);
+        return nx;
+    }
+
+    // Creates a new version by updating index i to val on top of version 'ver'
+    ll set(ll ver, ll i, ll val) {
+        ll new_root = set(i, val, roots[ver], 0, size);
+        roots.push_back(new_root);
+        return (ll)roots.size() - 1;
+    }
+
+    void set_in_place(ll ver, ll i, ll val) {
+        roots[ver] = set(i, val, roots[ver], 0, size);
+    }
+
+    // Explicitly creates a new version that starts as an exact clone of 'ver'
+    ll copy_version(ll ver) {
+        roots.push_back(roots[ver]);
+        return (ll)roots.size() - 1;
+    }
+
+    ll query(ll l, ll r, ll x, ll lx, ll rx) {
+        if (x == -1 || lx >= r || rx <= l)
+            return NEUTRAL_ELEMENT;
+        if (lx >= l && rx <= r)
+            return sums[x];
+        ll mid = (lx + rx) / 2;
+        ll s1 = query(l, r, lc[x], lx, mid);
+        ll s2 = query(l, r, rc[x], mid, rx);
+        return merge(s1, s2);
+    }
+
+    // Queries the half-open range [l, r) in version 'ver'
+    ll query(ll ver, ll l, ll r) {
+        return query(l, r, roots[ver], 0, size);
+    }
+};
+
+// end
+
 // String Hashing 
 
 vector<pair<ll,ll>> compute_hash(const string &s) {
@@ -3999,6 +4129,8 @@ while (hi - lo > 1){
 }
 //lo + 1 is the answer
 
+// end
+
 // nCr template
 
 #include <bits/stdc++.h>
@@ -4069,7 +4201,5 @@ int main() {
     
     return 0;
 }
-
-// end
 
 // end
